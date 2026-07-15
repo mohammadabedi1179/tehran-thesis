@@ -40,6 +40,7 @@ twoside
 \input{./tex/words}
 \input{./tex/acronyms}
 
+\usetikzlibrary{positioning, calc}
 \begin{document}
 
 \pagenumbering{adadi} % یک، دو، ...
@@ -53,6 +54,8 @@ twoside
 \include{./tex/chapter3}		% فصل سوم: روش تحقیق
 \include{./tex/chapter4}		% فصل چهارم: نتایج
 \include{./tex/chapter5}		% فصل پنجم: بحث و نتیجه‌گیری
+\include{./tex/chapter6}
+\include{./tex/chapter7}
 
 % مراجع
 % اگر از استیل‌های natbib استفاده می‌کنید باید دو خط را در فایل commands.tex تغییر دهید.
@@ -60,7 +63,7 @@ twoside
 {
 \small
 \onehalfspacing
-\bibliographystyle{plain-fa} % or plainnat-fa for author-date
+\bibliographystyle{unsrt-fa} % or plainnat-fa for author-date
 \bibliography{./tex/MyReferences}
 }
 
@@ -86,6 +89,7 @@ twoside
 \include{./tex/appendix1}		% پیوست اول: آشنایی مقدماتی با لاتک
 \include{./tex/appendix2}		% پیوست دوم: جدول، نمودار و الگوریتم در لاتک
 \include{./tex/appendix3}   	% پیوست سوم: مراجع، واژه‌نامه و حاشیه‌نویسی
+\include{./tex/appendix4}
 
 % برگرداندن شماره‌بندی صفحات فصول
 % \let\chapter\Chapter

@@ -1,0 +1,857 @@
+\chapter{ارزیابی و تحلیل نتایج}
+
+\section{مقدمه}
+\label{sec:evaluation_intro}
+
+در فصل‌های پیشین، چارچوب پیشنهادی ناوبری اسکوتر چهارچرخ، شامل فضای مشاهده و عمل، تابع پاداش، معماری \lr{LSTM-SAC}، آموزش مرحله‌ای، سپر ایمنی و زنجیره پیاده‌سازی عملی تشریح شد. آموزش بر پایه ساختار معلم--دانشجو انجام گرفت؛ عامل معلم با مشاهده هندسی دقیق نقش سیاست مرجع را دارد و عامل دانشجو با داده‌های ادراکی و لنگر رفتاری معلم آموزش می‌بیند تا سیاست قابل انتقال به سامانه واقعی حاصل شود.
+
+این فصل نتایج را در سه سطح بررسی می‌کند: نخست، روند آموزش و کیفیت یادگیری معلم و دانشجو در شبیه‌سازی؛ دوم، عملکرد سیاست‌های ثابت در سناریوی نهایی و مقایسه با \lr{MPC}؛ و سوم، دقت اجزای ادراکی و حرکتی و اجرای یکپارچه سیاست روی اسکوتر واقعی. ارزیابی تنها به پاداش محدود نیست و نرخ موفقیت، برخورد و اتمام زمان، طول اپیزود، زیان شبکه‌ها، نرمی فرمان، فاصله از موانع، زمان تا برخورد و مداخلات سپر نیز گزارش می‌شوند. تفسیر کلان دستاوردها، محدودیت‌ها و پیشنهادهای پژوهش در فصل هفتم ارائه خواهد شد.
+
+\section{پروتکل ارزیابی و شاخص‌های عملکرد}
+\label{sec:evaluation_protocol}
+
+در مسئله ناوبری اسکوتر، رسیدن به هدف به‌تنهایی معیار کافی نیست؛ زیرا یک سیاست ممکن است با نزدیک‌شدن خطرناک به موانع یا تولید فرمان‌های پرنوسان نیز موفق شود. ازاین‌رو، ارزیابی سه جنبه کارایی ناوبری، ایمنی و کیفیت فرمان را پوشش می‌دهد. نتایج در سطح آموزش، آزمون نهایی با وزن‌های ثابت و اجرای عملی بررسی می‌شوند؛ معلم مرجع مبتنی بر هندسه دقیق و دانشجو سیاست اصلی مبتنی بر ادراک است.
+
+\subsection{شرایط کلی ارزیابی}
+\label{subsec:evaluation_conditions}
+
+در آموزش، عامل‌ها در محیط \lr{Gazebo} و \lr{ROS2} با مدل اسکوتر، هدف، موانع و حسگرهای مجازی تعامل می‌کنند. عامل در هر گام فرمان سرعت خطی و زاویه‌ای را تولید می‌کند و محیط وضعیت بعدی، پاداش و وضعیت پایان را بازمی‌گرداند. پاداش، دلیل پایان، طول اپیزود، زیان‌ها، وضعیت سپر، فاصله از موانع و شاخص‌های نرمی ثبت می‌شوند. مشاهده معلم از هندسه دقیق و مشاهده دانشجو از زنجیره ادراکی ساخته می‌شود.
+
+در آزمون نهایی، شبکه به‌روزرسانی نمی‌شود و سناریوها با تغییر موانع، هدف، موقعیت اولیه و پیچیدگی محیط اجرا می‌شوند. هر حالت در چندین اپیزود مستقل تکرار شده و رسیدن به هدف، برخورد، اتمام زمان، طول اپیزود، حداقل فاصله، \lr{TTC}، رخدادهای سپر و کیفیت فرمان ثبت می‌شوند تا نتیجه به یک اجرای منفرد وابسته نباشد.
+
+\subsection{شاخص‌های ارزیابی}
+\label{subsec:evaluation_metrics}
+
+شاخص‌ها شامل پاداش تجمعی، توزیع دلایل پایان، طول اپیزود، زیان‌های کنشگر و منتقد، نرمی حرکت، تغییر عملکرد در مراحل آموزش، وابستگی به سپر، شدت رخدادهای ایمنی و حداقل فاصله از موانع هستند.
+
+نرخ موفقیت، نسبت اپیزودهای منتهی به هدف به کل اپیزودها است:
+\begin{equation}
+	SR = \frac{N_{\mathrm{goal}}}{N}
+	\label{eq:success_rate_definition}
+\end{equation}
+
+نرخ برخورد و اتمام زمان نیز به‌ترتیب از نسبت اپیزودهای برخورد و پایان‌یافته بر اثر محدودیت زمانی محاسبه می‌شوند:
+\begin{equation}
+	CR = \frac{N_{\mathrm{collision}}}{N},
+	\qquad
+	TR = \frac{N_{\mathrm{timeout}}}{N}
+	\label{eq:collision_timeout_rate_definition}
+\end{equation}
+
+پاداش تجمعی هر اپیزود برابر مجموع پاداش‌ها و جریمه‌های لحظه‌ای است:
+\begin{equation}
+	R_{\mathrm{ep}} = \sum_{t=0}^{T} r_t
+	\label{eq:episode_return_definition}
+\end{equation}
+
+به‌دلیل چندمؤلفه‌ای بودن تابع پاداش، افزایش آن فقط زمانی نشانه بهبود است که با افزایش موفقیت و کاهش برخورد، اتمام زمان و رخدادهای پرخطر همراه باشد. توزیع پاداش برای مشاهده روند مرکزی، پراکندگی و نقاط پرت استفاده می‌شود. طول اپیزود نیز همراه با دلیل پایان تفسیر می‌گردد؛ کوتاه‌شدن اپیزود موفق مطلوب است، اما پایان زودهنگام ناشی از برخورد نیست.
+
+زیان منتقد خطای تخمین ارزش و زیان کنشگر روند اصلاح سیاست را نشان می‌دهد. این مقادیر برای بررسی پایداری عددی مفیدند، ولی معیار مستقیم کیفیت ناوبری محسوب نمی‌شوند. شاخص‌های ایمنی علاوه بر نرخ برخورد، حداقل فاصله، \lr{TTC} و فراوانی و شدت مداخلات سپر را دربر می‌گیرند؛ زیرا ممکن است اپیزود بدون برخورد پایان یابد، اما عامل بارها وارد ناحیه خطر شود. حداقل فاصله اپیزود به‌صورت زیر تعریف می‌شود:
+\begin{equation}
+	d_{\min} = \min_{t,i} d_i(t).
+	\label{eq:min_obstacle_distance_definition}
+\end{equation}
+
+برای سنجش قابلیت اجرای فرمان روی سامانه واقعی، تغییرات متوالی سرعت خطی و زاویه‌ای محاسبه می‌شوند:
+\begin{equation}
+	\Delta v_t = v_t - v_{t-1},
+	\qquad
+	\Delta \omega_t = \omega_t - \omega_{t-1}.
+	\label{eq:control_variation_definition}
+\end{equation}
+
+مجموع مربع این تغییرات یک شاخص تجمعی نرمی فرمان را تشکیل می‌دهد:
+\begin{equation}
+	J_{\mathrm{ctrl}} =
+	\sum_{t=1}^{T}
+	\left[
+	(\Delta v_t)^2 +
+	(\Delta \omega_t)^2
+	\right].
+	\label{eq:control_smoothness_definition}
+\end{equation}
+
+مقدار کمتر این شاخص معمولاً به معنی فرمان نرم‌تر است، هرچند نرمی بیش از حد می‌تواند واکنش به موانع متحرک را کند کند. بنابراین، شاخص‌های حرکت همراه با موفقیت و ایمنی تحلیل می‌شوند.
+
+\section{تحلیل نتایج آموزش در محیط شبیه‌سازی}
+\label{sec:training_results_analysis}
+
+در این بخش، روند آموزش معلم به‌عنوان سیاست مرجع مبتنی بر هندسه دقیق و دانشجو به‌عنوان سیاست ادراکی نهایی مقایسه می‌شود. تمرکز بر شکل‌گیری رفتار هدفمند، پایداری آموزش، کیفیت فرمان، اثر آموزش مرحله‌ای و وضعیت سپر ایمنی است.
+
+\subsection{روند کلی یادگیری}
+\label{subsec:overall_training_trend}
+
+شکل~\ref{fig:teacher_student_reward_distribution} روند توزیع پاداش تجمعی را در طول آموزش برای عامل معلم و عامل دانشجو نشان می‌دهد. در هر دو عامل، پاداش در ابتدای آموزش از مقادیر منفی شروع شده و پس از تعداد کمی اپیزود به‌سرعت وارد ناحیه مثبت می‌شود. این جهش اولیه نشان می‌دهد که هر دو سیاست توانسته‌اند از رفتارهای کاملاً ناموفق و اکتشافی فاصله بگیرند و الگوی پایه‌ای حرکت به سمت هدف را یاد بگیرند.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[عامل معلم]{
+		\begin{minipage}{\textwidth}
+			\centering
+			\includegraphics[width=0.95\textwidth, height=5cm]{17_reward_quantile_band_teacher.png}
+			
+			\vspace{0.4em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/17_reward_quantile_band_teacher.html}{\textbf{مشاهده نسخه تعاملی شکل با کیفیت بالاتر}}
+				\qquad
+				\qrcode[height=1.2cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/17_reward_quantile_band_teacher.html}
+			}
+		\end{minipage}
+	}
+	
+	\vspace{0.8em}
+	
+	\subfloat[عامل دانشجو]{
+		\begin{minipage}{\textwidth}
+			\centering
+			\includegraphics[width=0.95\textwidth, height=5cm]{17_reward_quantile_band_student.png}
+			
+			\vspace{0.4em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/17_reward_quantile_band_student.html}{\textbf{مشاهده نسخه تعاملی شکل با کیفیت بالاتر}}
+				\qquad
+				\qrcode[height=1.2cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/17_reward_quantile_band_student.html}
+			}
+		\end{minipage}
+	}
+	
+	\caption{مقایسه روند توزیع پاداش در طول آموزش: الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_reward_distribution}
+\end{figure}
+
+پس از فاز ابتدایی، مقدار مرکزی پاداش در هر دو نمودار در سطح نسبتاً بالایی باقی می‌ماند؛ بااین‌حال، نوسان‌ها و نقاط پرت منفی نشان می‌دهند که عملکرد عامل‌ها در تمام اپیزودها یکنواخت نیست. این موضوع به‌ویژه برای عامل دانشجو مهم‌تر است، زیرا مشاهده ادراکی نسبت به مشاهده هندسی دقیق عدم‌قطعیت بیشتری دارد. بنابراین، روند پاداش نشان‌دهنده شکل‌گیری رفتار مفید است، اما برای قضاوت نهایی باید همراه با دلیل پایان اپیزود و طول اپیزود تفسیر شود.
+
+شکل~\ref{fig:teacher_student_termination_reason_distribution} نشان می‌دهد که در بخش عمده آموزش، اپیزودهای موفق سهم غالب را تشکیل می‌دهند. در عامل معلم، برخوردها محدودتر و پراکنده‌تر هستند، در حالی که در عامل دانشجو، سهم برخوردها در مراحل میانی و پایانی افزایش بیشتری دارد. این نتیجه نشان می‌دهد که آموزش دانشجو موفق بوده، اما انتقال از مشاهده هندسی به مشاهده ادراکی با کاهش نسبی حاشیه ایمنی همراه شده است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{04_reason_distribution_teacher.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/04_reason_distribution_teacher.html}
+				{\textbf{مشاهده نسخه تعاملی عامل معلم با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\qrcode[height=1.2cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/04_reason_distribution_teacher.html}
+				}
+			}
+		\end{minipage}
+	}
+	
+	\vspace{0.7em}
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.9\textwidth, height=5cm]
+			{04_reason_distribution_student.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/04_reason_distribution_student.html}
+				{\textbf{مشاهده نسخه تعاملی عامل دانشجو با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\qrcode[height=1.2cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/04_reason_distribution_student.html}
+				}
+			}
+		\end{minipage}
+	}
+	
+	\caption{مقایسه توزیع دلایل پایان اپیزود در طول آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_termination_reason_distribution}
+\end{figure}
+
+تحلیل طول اپیزود در شکل~\ref{fig:teacher_student_episode_length} همین برداشت را تکمیل می‌کند. در هر دو عامل، طول اپیزود پس از چند اپیزود ابتدایی به‌سرعت کاهش می‌یابد و در ادامه در بازه‌ای محدودتر قرار می‌گیرد. بااین‌حال، پراکندگی طول اپیزود در عامل دانشجو بیشتر است و بخشی از اپیزودهای کوتاه آن به برخورد منتهی شده‌اند. بنابراین، کاهش طول اپیزود برای دانشجو را نباید صرفاً نشانه کارایی بیشتر دانست؛ بخشی از آن ناشی از پایان زودهنگام نامطلوب است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{03_episode_length_time_teacher.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{
+					https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/03_episode_length_time_teacher.html
+				}{
+					\textbf{مشاهده نسخه تعاملی عامل معلم با کیفیت بالاتر}
+				}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\qrcode[height=1.2cm]{
+						https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/03_episode_length_time_teacher.html
+					}
+				}
+			}
+			
+		\end{minipage}
+	}
+	
+	\vspace{0.7em}
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{03_episode_length_time_student.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{
+					https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/03_episode_length_time_student.html
+				}{
+					\textbf{مشاهده نسخه تعاملی عامل دانشجو با کیفیت بالاتر}
+				}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\qrcode[height=1.2cm]{
+						https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/03_episode_length_time_student.html
+					}
+				}
+			}
+			
+		\end{minipage}
+	}
+	
+	\caption{مقایسه روند طول اپیزود در طول آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_episode_length}
+\end{figure}
+
+
+
+ترکیب سه نمودار نشان می‌دهد هر دو عامل رفتار هدفمند آموخته‌اند، اما معلم پایدارتر است و دانشجو در سناریوهای دشوارتر نوسان و برخورد بیشتری دارد.
+
+\subsection{پایداری یادگیری و کیفیت فرمان}
+\label{subsec:learning_stability_motion_quality}
+
+برای بررسی پایداری عددی فرآیند آموزش، شکل~\ref{fig:teacher_student_actor_critic_loss} روند زیان کنشگر و منتقد را نشان می‌دهد. در عامل معلم، زیان‌ها پس از فاز ابتدایی در محدوده‌ای کنترل‌شده باقی می‌مانند و نشانه‌ای از واگرایی جدی دیده نمی‌شود. در عامل دانشجو، زیان منتقد بزرگ‌تر و پراکنده‌تر است که با دشوارتر بودن تخمین ارزش در فضای مشاهده ادراکی سازگار است. با وجود این، روند کلی زیان‌ها به فروپاشی آموزش منجر نشده است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}[t]{0.48\textwidth}
+			\centering
+			
+			\includegraphics[width=\linewidth]
+			{05_losses_entropy_teacher.png}
+			
+			\vspace{0.4em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/05_losses_entropy_teacher.html}
+				{\textbf{مشاهده نسخه تعاملی عامل معلم با کیفیت بالاتر}}
+				
+				\par\vspace{0.3em}
+				
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/05_losses_entropy_teacher.html}{
+					\qrcode[height=1.15cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/05_losses_entropy_teacher.html}
+				}
+			}
+		\end{minipage}
+	}
+	\hfill
+	\subfloat[]{
+		\begin{minipage}[t]{0.48\textwidth}
+			\centering
+			
+			\includegraphics[width=\linewidth]
+			{05_losses_entropy_student.png}
+			
+			\vspace{0.4em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/05_losses_entropy_student.html}
+				{\textbf{مشاهده نسخه تعاملی عامل دانشجو با کیفیت بالاتر}}
+				
+				\par\vspace{0.3em}
+				
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/05_losses_entropy_student.html}{
+					\qrcode[height=1.15cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/05_losses_entropy_student.html}
+				}
+			}
+		\end{minipage}
+	}
+	
+	\caption{مقایسه روند زیان کنشگر و منتقد در طول آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_actor_critic_loss}
+\end{figure}
+
+شکل~\ref{fig:teacher_student_mean_jerk} کیفیت فرمان‌های تولیدشده را از نظر شاخص تکان میانگین نشان می‌دهد. در هر دو عامل، مقدار تکان در ابتدای آموزش بالا است و سپس کاهش می‌یابد. این کاهش نشان می‌دهد که سیاست‌ها به‌تدریج از تولید فرمان‌های ناگهانی فاصله گرفته‌اند. در هر دو نمودار، مؤلفه زاویه‌ای نسبت به مؤلفه خطی مقدار بیشتری دارد که با ماهیت مسئله ناوبری در حضور مانع و نیاز به اصلاح جهت سازگار است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{08_mean_jerk_teacher.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/08_mean_jerk_teacher.html}
+				{\textbf{مشاهده نسخه تعاملی عامل معلم با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/08_mean_jerk_teacher.html}{
+						\qrcode[height=1.2cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/08_mean_jerk_teacher.html}
+					}
+				}
+			}
+		\end{minipage}
+	}
+	
+	\vspace{0.7em}
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.9\textwidth, height=5cm]
+			{08_mean_jerk_student.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/08_mean_jerk_student.html}
+				{\textbf{مشاهده نسخه تعاملی عامل دانشجو با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/08_mean_jerk_student.html}{
+						\qrcode[height=1.2cm]{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/08_mean_jerk_student.html}
+					}
+				}
+			}
+		\end{minipage}
+	}
+	
+	\caption{مقایسه روند شاخص تکان میانگین در طول آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_mean_jerk}
+\end{figure}
+
+این دو نمودار نشان می‌دهند بهبود آموزش علاوه بر پاداش، با پایداری عددی و کاهش تغییرات ناگهانی فرمان همراه بوده است؛ بااین‌حال، زیان منتقد دانشجو دشواری بیشتر یادگیری از مشاهده ادراکی را نشان می‌دهد.
+
+\subsection{اثر آموزش مرحله‌ای}
+\label{subsec:curriculum_effect_analysis}
+
+برای بررسی اثر مراحل مختلف آموزش، شکل~\ref{fig:teacher_student_stagewise_outcomes} ترکیب دلایل پایان اپیزود را به تفکیک stage نشان می‌دهد. در هر دو عامل، سهم اپیزودهای موفق در بیشتر مراحل غالب است؛ بنابراین، افزایش تدریجی دشواری سناریوها باعث فروپاشی عملکرد نشده است. بااین‌حال، در مراحل دشوارتر، سهم برخورد افزایش می‌یابد و این افزایش برای عامل دانشجو محسوس‌تر است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{19_stagewise_outcome_composition_teacher.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/19_stagewise_outcome_composition_teacher.html}
+				{\textbf{مشاهده نسخه تعاملی عامل معلم با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/19_stagewise_outcome_composition_teacher.html}{
+						\qrcode[height=1.2cm]
+						{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/19_stagewise_outcome_composition_teacher.html}
+					}
+				}
+			}
+			
+		\end{minipage}
+	}
+	
+	\vspace{0.7em}
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{19_stagewise_outcome_composition_student.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/19_stagewise_outcome_composition_student.html}
+				{\textbf{مشاهده نسخه تعاملی عامل دانشجو با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{
+					\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/19_stagewise_outcome_composition_student.html}{
+						\qrcode[height=1.2cm]
+						{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/19_stagewise_outcome_composition_student.html}
+					}
+				}
+			}
+			
+		\end{minipage}
+	}
+	
+	\caption{ترکیب دلایل پایان اپیزود به تفکیک مراحل مختلف آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_stagewise_outcomes}
+\end{figure}
+
+آموزش مرحله‌ای عملکرد را در مراحل مختلف حفظ کرده است، اما افزایش دشواری حاشیه ایمنی را کاهش داده و دانشجو نسبت به معلم حساسیت بیشتری نشان داده است.
+
+\subsection{تحلیل سپر ایمنی}
+\label{subsec:shield_analysis}
+
+شکل~\ref{fig:teacher_student_shield_dependency} رابطه میان نرخ موفقیت و نسبت مداخلات سپر را نشان می‌دهد. در عامل معلم، نرخ موفقیت پس از فاز ابتدایی در سطح بالایی باقی می‌ماند و نسبت مداخلات سپر در محدوده‌ای کنترل‌شده نوسان می‌کند. در عامل دانشجو، نرخ موفقیت همچنان قابل قبول است، اما نسبت مداخلات سپر بزرگ‌تر و نوسانی‌تر است. این تفاوت نشان می‌دهد که دانشجو برای حفظ عملکرد خود بیشتر به سپر ایمنی متکی بوده است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{27_shield_dependency_decay_teacher.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/27_shield_dependency_decay_teacher.html}
+				{\textbf{مشاهده نسخه تعاملی عامل معلم با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{%
+					\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/27_shield_dependency_decay_teacher.html}{%
+						\qrcode[height=1.2cm]
+						{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/27_shield_dependency_decay_teacher.html}%
+					}%
+				}
+			}
+		\end{minipage}
+	}
+	
+	\vspace{0.7em}
+	
+	\subfloat[]{
+		\begin{minipage}{\textwidth}
+			\centering
+			
+			\includegraphics[width=0.95\textwidth, height=5cm]
+			{27_shield_dependency_decay_student.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/27_shield_dependency_decay_student.html}
+				{\textbf{مشاهده نسخه تعاملی عامل دانشجو با کیفیت بالاتر}}
+				\hspace{0.8em}
+				\raisebox{-0.4\height}{%
+					\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/27_shield_dependency_decay_student.html}{%
+						\qrcode[height=1.2cm]
+						{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/27_shield_dependency_decay_student.html}%
+					}%
+				}
+			}
+		\end{minipage}
+	}
+	
+	\caption{مقایسه روند نرخ موفقیت و نسبت مداخلات سپر در طول آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_shield_dependency}
+\end{figure}
+
+برای تکمیل این تحلیل، شکل~\ref{fig:teacher_student_shield_severity} شدت رخدادهای سپر را نشان می‌دهد. در عامل معلم، بخش عمده رخدادها در سطح احتیاط باقی می‌ماند و امتیاز شدت معمولاً کنترل‌شده است. در عامل دانشجو، سهم رخدادهای خطر و بحرانی در برخی بازه‌ها بیشتر است و امتیاز شدت نوسان‌های بزرگ‌تری دارد. بنابراین، وابستگی بیشتر دانشجو به سپر فقط از جنس هشدارهای سطح پایین نیست، بلکه در برخی مراحل با نزدیک‌شدن بیشتر به وضعیت‌های پرخطر همراه شده است.
+
+\begin{figure}[htbp]
+	\centering
+	
+	\subfloat[]{
+		\begin{minipage}[t]{0.48\textwidth}
+			\centering
+			
+			\includegraphics[width=\linewidth]
+			{28_shield_severity_evolution_teacher.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/28_shield_severity_evolution_teacher.html}
+				{\textbf{مشاهده نسخه تعاملی با کیفیت بالاتر}}
+				
+				\par\vspace{0.3em}
+				
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/28_shield_severity_evolution_teacher.html}{%
+					\qrcode[height=1.15cm]
+					{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/28_shield_severity_evolution_teacher.html}%
+				}
+			}
+		\end{minipage}
+	}
+	\hfill
+	\subfloat[]{
+		\begin{minipage}[t]{0.48\textwidth}
+			\centering
+			
+			\includegraphics[width=\linewidth]
+			{28_shield_severity_evolution_student.png}
+			
+			\vspace{0.35em}
+			
+			{\small
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/28_shield_severity_evolution_student.html}
+				{\textbf{مشاهده نسخه تعاملی با کیفیت بالاتر}}
+				
+				\par\vspace{0.3em}
+				
+				\href{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/28_shield_severity_evolution_student.html}{%
+					\qrcode[height=1.15cm]
+					{https://mohammadabedi1179.github.io/thesis-archive/chapters/ch6/28_shield_severity_evolution_student.html}%
+				}
+			}
+		\end{minipage}
+	}
+	
+	\caption{مقایسه ترکیب شدت رخدادهای سپر ایمنی در طول آموزش:
+		الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:teacher_student_shield_severity}
+\end{figure}
+
+رخدادهای سپر نشان می‌دهند دانشجو علاوه بر مداخله بیشتر، در برخی بازه‌ها به سطوح خطر و بحرانی نزدیک‌تر شده است؛ بنابراین، سپر هم لایه حفاظتی و هم شاخصی برای سنجش رفتار پرخطر است.
+
+\subsection{جمع‌بندی تحلیل آموزش}
+\label{subsec:training_analysis_summary}
+
+هر دو عامل از فاز ابتدایی عبور کرده و به پاداش و موفقیت مناسب رسیده‌اند. معلم در بیشتر شاخص‌ها پایدارتر است؛ دانشجو قابلیت ناوبری را حفظ کرده، اما با نوسان، برخورد، زیان منتقد و وابستگی بیشتر به سپر همراه است.
+
+برای سنجش اینکه این تفاوت‌ها پس از پایان آموزش نیز باقی می‌مانند، سیاست‌های ثابت در سناریوهای مستقل ارزیابی شدند.
+
+\section{ارزیابی نهایی سیاست‌ها در سناریوی آزمون}
+\label{sec:final_policy_evaluation}
+
+پس از پایان آموزش، عامل معلم، عامل دانشجو و خط مبنای \lr{MPC} در شرایط مختلف مشاهده و وضعیت سپر مقایسه شدند تا اثر نوع سیاست، کیفیت داده و لایه ایمنی جداگانه سنجیده شود.
+
+سناریوی نهایی شامل سه مانع ایستا، چهار مانع متحرک و هدف متحرک با سرعت \lr{0.5 m/s} بود. محدودیت زمانی اپیزود \lr{100 s} و شعاع موفقیت \lr{1.5 m} تعیین شد. برای هر حالت، 100 اپیزود مستقل اجرا و پاداش، طول، دلیل پایان، \lr{TTC}، حداقل فاصله، مداخلات سپر، فرمان‌ها و شاخص‌های نرمی ثبت گردید.
+
+\subsection{تعریف حالت‌های ارزیابی نهایی}
+\label{subsec:final_eval_protocol}
+
+شش حالت جدول~\ref{tab:final_eval_modes} سه محور نوع سیاست، منبع مشاهده و وضعیت سپر را پوشش می‌دهند. چهار حالت نخست مربوط به عامل‌های یادگیرنده و دو حالت پایانی مربوط به \lr{MPC} هستند.
+
+\begin{table}[htbp]
+	\centering
+	\caption{حالت‌های مختلف ارزیابی نهایی در سناریوی مرحله نهم}
+	\label{tab:final_eval_modes}
+	\small
+	\begin{tabular}{c p{3.2cm} p{3.0cm} p{3.5cm}}
+		\hline
+		آزمون & مدل ارزیابی‌شده & منبع مشاهده & وضعیت سپر ایمنی \\
+		\hline
+		آزمون اول & دانشجو & داده‌های حسگری & سپر فعال \\
+		آزمون دوم & دانشجو & داده‌های حسگری & بدون مداخله فعال سپر \\
+		آزمون سوم & معلم & داده‌های ایده‌آل & سپر فعال \\
+		آزمون چهارم & معلم & داده‌های حسگری & سپر فعال \\
+		آزمون پنجم & \lr{MPC} & داده‌های حسگری & سپر غیرفعال \\
+		آزمون ششم & \lr{MPC} & داده‌های حسگری & سپر فعال \\
+		\hline
+	\end{tabular}
+\end{table}
+
+آزمون‌های اول و دوم دانشجو را با داده حسگری و به‌ترتیب با سپر فعال و بدون مداخله فعال سپر مقایسه می‌کنند و وابستگی ایمنی آن به لایه حفاظتی را نشان می‌دهند.
+
+آزمون‌های سوم و چهارم معلم را با سپر فعال و به‌ترتیب با مشاهده ایده‌آل و حسگری می‌سنجند تا اثر مسیر ادراکی مشخص شود.
+
+آزمون‌های پنجم و ششم نیز \lr{MPC} را با داده حسگری و به‌ترتیب با سپر غیرفعال و فعال ارزیابی می‌کنند.
+
+\subsection{مقایسه عملکرد کلی در حالت‌های ارزیابی}
+\label{subsec:final_eval_overall_comparison}
+
+خلاصه خروجی اپیزودها در جدول~\ref{tab:final_eval_outcome_summary} ارائه شده است.
+
+\begin{table}[htbp]
+	\centering
+	\caption{خلاصه نتایج خروجی اپیزودها در شش حالت ارزیابی نهایی}
+	\label{tab:final_eval_outcome_summary}
+	\small
+	\begin{tabular}{c p{6.8cm} c c c}
+		\hline
+		آزمون & حالت ارزیابی & موفقیت & اتمام زمان & برخورد \\
+		\hline
+		آزمون اول & دانشجو، داده حسگری، سپر فعال & 96\% & 4\% & 0\% \\
+		آزمون دوم & دانشجو، داده حسگری، بدون مداخله فعال سپر & 81\% & 2\% & 17\% \\
+		آزمون سوم & معلم، داده ایده‌آل، سپر فعال & 98\% & 1\% & 1\% \\
+		آزمون چهارم & معلم، داده حسگری، سپر فعال & 94\% & 1\% & 5\% \\
+		آزمون پنجم & \lr{MPC}، داده حسگری، سپر غیرفعال & 30\% & 0\% & 70\% \\
+		آزمون ششم & \lr{MPC}، داده حسگری، سپر فعال & 50\% & 2\% & 48\% \\
+		\hline
+	\end{tabular}
+\end{table}
+
+دانشجو با سپر فعال به 96 درصد موفقیت، 4 درصد اتمام زمان و برخورد صفر رسید. بدون مداخله فعال سپر، موفقیت به 81 درصد کاهش یافت و برخورد به 17 درصد رسید؛ بنابراین، سپر در خروجی نهایی دانشجو اثر مستقیم داشته است.
+
+معلم با مشاهده ایده‌آل و سپر فعال 98 درصد موفقیت، 1 درصد اتمام زمان و 1 درصد برخورد داشت. جایگزینی مشاهده ایده‌آل با داده حسگری، موفقیت را به 94 درصد کاهش و برخورد را به 5 درصد افزایش داد و اثر عدم‌قطعیت ادراکی را نشان داد.
+
+\lr{MPC} بدون سپر تنها 30 درصد موفقیت و 70 درصد برخورد داشت. با فعال‌شدن سپر، موفقیت به 50 درصد افزایش یافت و برخورد به 48 درصد کاهش پیدا کرد؛ بااین‌حال، برخورد آن از حالت‌های یادگیری‌شده بیشتر باقی ماند.
+
+دانشجو حتی بدون مداخله فعال سپر، نسبت به \lr{MPC} بدون سپر موفقیت بیشتر و برخورد کمتری ثبت کرد: 81 در برابر 30 درصد موفقیت و 17 در برابر 70 درصد برخورد.
+
+\subsection{تحلیل جامع داشبوردهای ارزیابی نهایی}
+\label{subsec:final_eval_dashboard_analysis}
+
+داشبوردهای شکل‌های~\ref{fig:eval_dashboard_test1} تا~\ref{fig:eval_dashboard_test4} برای عامل‌های یادگیرنده، پاداش، طول اپیزود، دلایل پایان، \lr{TTC}، حداقل فاصله، سپر، فرمان میانگین، تکان و همبستگی‌ها را نمایش می‌دهند. شکل~\ref{fig:mpc_dashboards} برای \lr{MPC} علاوه بر خروجی و هندسه ایمنی، زمان حل و اشباع فرمان را گزارش می‌کند.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.84\textwidth]{eval_dashboard_student_active-shield.png}
+	\caption{داشبورد ارزیابی نهایی برای آزمون اول: عامل دانشجو، داده‌های حسگری، سپر فعال}
+	\label{fig:eval_dashboard_test1}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.84\textwidth]{eval_dashboard_student_perception_passive_shield.png}
+	\caption{داشبورد ارزیابی نهایی برای آزمون دوم: عامل دانشجو، داده‌های حسگری، بدون مداخله فعال سپر}
+	\label{fig:eval_dashboard_test2}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.84\textwidth]{eval_dashboard_teacher_use-gt_active-shield.png}
+	\caption{داشبورد ارزیابی نهایی برای آزمون سوم: عامل معلم، داده‌های ایده‌آل، سپر فعال}
+	\label{fig:eval_dashboard_test3}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.84\textwidth]{eval_dashboard_teacher_perception_active-shield.png}
+	\caption{داشبورد ارزیابی نهایی برای آزمون چهارم: عامل معلم، داده‌های حسگری، سپر فعال}
+	\label{fig:eval_dashboard_test4}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\subfloat[]{
+		\includegraphics[width=0.48\textwidth]{mpc_compact_eval_shield_off.png}
+	}
+	\hfill
+	\subfloat[]{
+		\includegraphics[width=0.48\textwidth]{mpc_compact_eval_shield_on.png}
+	}
+	\caption{داشبوردهای فشرده ارزیابی \lr{MPC} در سناریوی مرحله نهم: الف) آزمون پنجم، \lr{MPC} با داده‌های حسگری و سپر غیرفعال، ب) آزمون ششم، \lr{MPC} با داده‌های حسگری و سپر فعال}
+	\label{fig:mpc_dashboards}
+\end{figure}
+
+در آزمون اول، بیشتر پاداش‌ها مثبت‌اند، تنها چند اتمام زمان رخ داده و برخوردی ثبت نشده است. بااین‌حال، در چند اپیزود مداخلات متعدد سپر و حداقل \lr{TTC} کوچک دیده می‌شود؛ یعنی سپر برخی موقعیت‌های نزدیک به خطر را پیش از برخورد اصلاح کرده است.
+
+در آزمون دوم، برخوردها با پاداش منفی ظاهر می‌شوند و حداقل فاصله و \lr{TTC} کاهش حاشیه ایمنی را نشان می‌دهند. چون مدل و داده ورودی با آزمون اول یکسان‌اند، این تفاوت به وضعیت مداخله سپر مربوط است.
+
+در آزمون سوم، تقریباً همه اپیزودها موفق‌اند و فقط موارد محدودی از برخورد و اتمام زمان وجود دارد. کاهش مقطعی \lr{TTC} و مداخله سپر نشان می‌دهد سناریو حتی با مشاهده ایده‌آل نیز موقعیت‌های نزدیک به خطر ایجاد می‌کند.
+
+در آزمون چهارم، داده حسگری با افت موفقیت، افزایش برخورد و پراکندگی بیشتر حداقل فاصله و \lr{TTC} همراه است، هرچند عملکرد معلم همچنان از دانشجو بدون سپر و \lr{MPC} بهتر است.
+
+در داشبورد \lr{MPC} بدون سپر، بیشتر برخوردها در فاصله کم و \lr{TTC} پایین رخ داده‌اند و فرمان‌ها در بخش قابل توجهی از زمان نزدیک اشباع بوده‌اند.
+
+در آزمون ششم، سپر موفقیت \lr{MPC} را از 30 به 50 درصد افزایش و برخورد را از 70 به 48 درصد کاهش داد، اما نرخ برخورد همچنان از عامل‌های یادگیرنده بیشتر بود.
+
+زمان حل هر گام \lr{MPC} نسبت به گام زمانی محیط قابل توجه بود و بار محاسباتی بیشتری از استنتاج سیاست عصبی داشت. این تفاوت همراه با الگوی اشباع فرمان در داشبورد ثبت شده است.
+
+مقایسه شش آزمون نشان می‌دهد بهترین خروجی متعلق به معلم با مشاهده ایده‌آل و سپر فعال است؛ دانشجو با داده حسگری و سپر فعال به خروجی نزدیک و برخورد صفر رسیده؛ حذف سپر از دانشجو برخورد را افزایش داده؛ و مشاهده حسگری نسبت به مشاهده ایده‌آل افت ایجاد کرده است.
+
+تفسیر کلان این مقایسه و جایگاه آن در دستاوردها و محدودیت‌های پژوهش در فصل هفتم ارائه می‌شود.
+
+\section{ارزیابی عملکرد اجزای سامانه عملی}
+\label{sec:real_system_component_validation}
+
+پیش از اجرای کامل سیاست، فاصله‌سنجی استریو، تخمین جهت‌گیری و پاسخ سامانه حرکتی جداگانه ارزیابی شدند تا کیفیت اجزای مؤثر بر اجرای واقعی مشخص شود.
+
+\subsection{ارزیابی دقت فاصله‌سنجی استریو در حالت ایستا}
+\label{subsec:stereo_depth_accuracy_test}
+
+برای بررسی صحت زنجیره فاصله‌سنجی استریو در سامانه عملی، یک آزمون تجربی در حالت ایستا انجام شد. در این آزمون، اجسام مختلف در فاصله‌های معلوم نسبت به دوربین قرار گرفتند و فاصله واقعی آن‌ها با متر اندازه‌گیری شد. سپس در تصویر چپ تصحیح‌شده، ناحیه‌ای از جسم به‌صورت دستی انتخاب گردید و مقدار عمق از روی نقشه اختلاف مکانی همان ناحیه استخراج شد. استفاده از ناحیه به‌جای یک پیکسل منفرد باعث می‌شود اثر نویز نقطه‌ای، خطاهای موضعی نقشه اختلاف مکانی و مقادیر پرت کاهش یابد.
+
+برای هر ناحیه انتخابی، ابتدا پیکسل‌های دارای اختلاف مکانی معتبر استخراج شدند. سپس عمق متناظر با هر پیکسل معتبر بر اساس رابطه استریو محاسبه گردید. به‌منظور کاهش اثر نقاط پرت، بخش مرکزی توزیع عمق مورد استفاده قرار گرفت و مقدار نهایی فاصله از روی مقادیر باقی‌مانده محاسبه شد. علاوه بر فاصله تخمین‌زده‌شده، شاخص‌هایی مانند خطای اندازه‌گیری، انحراف معیار عمق، درصد پیکسل‌های معتبر و کیفیت اندازه‌گیری نیز ثبت شدند.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.75\linewidth]{depth_accuracy_thesis_style.png}
+	\caption{مقایسه فاصله واقعی و فاصله اندازه‌گیری‌شده در آزمون تجربی دقت فاصله‌سنجی استریو}
+	\label{fig:depth_accuracy_true_measured}
+\end{figure}
+
+در مجموع، $20$ اندازه‌گیری در بازه فاصله حدود $0.48$ تا $5.20~m$ انجام شد. خلاصه نتایج این آزمون در جدول~\ref{tab:stereo_depth_accuracy_summary} ارائه شده است. میانگین خطا برابر با $0.0025~m$ به دست آمده است که نشان می‌دهد خطای تخمین عمق در این مجموعه آزمایش‌ها دارای بایاس قابل توجهی نبوده است. بااین‌حال، برای ارزیابی واقعی دقت فاصله‌سنجی، شاخص‌های قدرمطلق خطا و ریشه میانگین مربعات خطا اهمیت بیشتری دارند. در این آزمون، میانگین قدرمطلق خطا برابر با $0.0660~m$، ریشه میانگین مربعات خطا برابر با $0.0812~m$ و میانگین قدرمطلق خطای نسبی برابر با $3.50\%$ به دست آمد. این مقادیر نشان می‌دهند که زنجیره فاصله‌سنجی استریو در بازه آزمایش‌شده، برای تشکیل مشاهده عامل و تخمین فاصله نسبی هدف و موانع قابل استفاده است.
+
+\begin{table}[htbp]
+	\centering
+	\caption{خلاصه نتایج آزمون تجربی دقت فاصله‌سنجی استریو}
+	\label{tab:stereo_depth_accuracy_summary}
+	\renewcommand{\arraystretch}{1.35}
+	\begin{tabular}{lc}
+		\hline
+		\textbf{شاخص ارزیابی} & \textbf{مقدار} \\
+		\hline
+		تعداد اندازه‌گیری‌ها & $20$ \\
+		بازه فاصله واقعی & $0.48$ تا $5.20~m$ \\
+		میانگین خطا & $0.0025~m$ \\
+		میانگین قدرمطلق خطا & $0.0660~m$ \\
+		ریشه میانگین مربعات خطا & $0.0812~m$ \\
+		میانگین قدرمطلق خطای نسبی & $3.50\%$ \\
+		میانگین پوشش پیکسل‌های معتبر & $95.95\%$ \\
+		\hline
+	\end{tabular}
+\end{table}
+
+شکل~\ref{fig:depth_accuracy_sample} نمونه‌ای از روند آزمون را نشان می‌دهد. در این شکل، تصویر چپ تصحیح‌شده، ناحیه انتخابی روی جسم و نقشه اختلاف مکانی متناظر نمایش داده شده است. مقایسه این خروجی‌ها نشان می‌دهد که نواحی دارای بافت مناسب و مرزهای قابل تفکیک، خروجی عمق پایدارتر و قابل اعتمادتر تولید می‌کنند. در مقابل، نواحی کم‌بافت، سطوح بازتابنده یا مرزهای ضعیف می‌توانند باعث کاهش کیفیت تخمین اختلاف مکانی شوند.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.95\linewidth]{depth_accuracy_sample.png}
+	\caption{نمونه‌ای از آزمون تجربی فاصله‌سنجی استریو با انتخاب ناحیه روی جسم و استخراج عمق از نقشه اختلاف مکانی}
+	\label{fig:depth_accuracy_sample}
+\end{figure}
+
+بر این اساس، عمق هدف و موانع از ناحیه معتبر داخل کادر یا نشانگر استخراج شد و اتکا به یک پیکسل منفرد کنار گذاشته شد. این آزمون دقت پایه در حالت ایستا را نشان می‌دهد و اثر حرکت، لرزش، تغییر نور، تأخیر و خطای تشخیص را پوشش نمی‌دهد.
+
+\subsection{ارزیابی زنجیره تخمین فاصله نسبی در اجرای واقعی اسکوتر}
+\label{subsec:real_scooter_relative_depth_accuracy}
+
+پس از ارزیابی دقت پایه فاصله‌سنجی استریو در حالت ایستا، عملکرد زنجیره تخمین فاصله نسبی در شرایط واقعی‌تر و هنگام حرکت اسکوتر نیز بررسی شد. در این آزمون، هدف و موانع در محیط ثابت نگه داشته شدند، اما اسکوتر در طول مسیر حرکت کرد. موقعیت اولیه اسکوتر و موقعیت هدف و موانع به برنامه داده شد و فاصله واقعی نسبی در هر ثانیه، بر اساس موقعیت تخمینی اسکوتر محاسبه گردید. موقعیت اسکوتر نیز از ترکیب اطلاعات حسگر اینرسی و انکودر چرخ‌ها به دست آمد. بنابراین، مقدار مرجع مورد استفاده در این آزمون یک اندازه‌گیری مستقیم مستقل در هر لحظه نیست، بلکه برآوردی مبتنی بر تخمین حرکت اسکوتر است.
+
+به همین دلیل، خطای گزارش‌شده در این آزمون نباید به‌عنوان خطای خالص دوربین استریو تفسیر شود. این خطا حاصل ترکیب چند منبع خطا است؛ از جمله خطای نقشه اختلاف مکانی، خطای تشخیص ناحیه هدف یا مانع، لرزش و حرکت دوربین، خطای تخمین موقعیت اسکوتر از حسگر اینرسی و انکودرها، خطای هم‌زمانی داده‌ها و خطای تبدیل مختصات بین قاب دوربین، بدنه اسکوتر و محیط. بااین‌حال، این آزمون از نظر کاربردی اهمیت زیادی دارد، زیرا نشان می‌دهد زنجیره ادراک و تخمین فاصله در شرایطی که برای اجرای سیاست واقعی استفاده می‌شود، چه سطحی از خطا را تولید می‌کند.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{00_combined_first_four_dashboard.png}
+	\caption{تحلیل تخمین فاصله نسبی هدف و مانع در اجرای واقعی اسکوتر؛ فاصله مرجع در هر ثانیه از موقعیت تخمینی اسکوتر بر اساس ترکیب حسگر اینرسی و انکودرها محاسبه شده است}
+	\label{fig:real_scooter_depth_dashboard}
+\end{figure}
+
+مطابق شکل~\ref{fig:real_scooter_depth_dashboard}، خطای تخمین فاصله در اجرای واقعی اسکوتر به‌طور محسوسی بیشتر از آزمون ایستای فاصله‌سنجی استریو است. برای نشانگر هدف، مقدار \lr{RMSE} داده خام برابر با حدود $0.55~m$ و برای موانع برابر با حدود $0.65~m$ است. این افزایش خطا قابل انتظار است، زیرا در این آزمون علاوه بر خطای خود استریو، خطاهای ناشی از حرکت اسکوتر، لرزش دوربین، تغییر زاویه دید، تأخیر پردازش و خطای تخمین موقعیت اسکوتر نیز وارد محاسبه می‌شوند.
+
+نمودارهای مقایسه فاصله تخمینی و فاصله مرجع نشان می‌دهند که با وجود افزایش پراکندگی نسبت به حالت ایستا، روند کلی تغییر فاصله در بسیاری از نمونه‌ها حفظ شده است. بااین‌حال، فاصله‌های تخمینی در برخی نواحی دارای بیش‌برآورد یا کم‌برآورد قابل توجه هستند. این رفتار نشان می‌دهد که خطاها صرفاً نویز تصادفی نیستند، بلکه می‌توانند از خطاهای سیستماتیک در تخمین موقعیت، کالیبراسیون، تبدیل مختصات یا کیفیت نقشه اختلاف مکانی نیز تأثیر بگیرند.
+
+نمودارهای خطا بر حسب سرعت خطی و سرعت زاویه‌ای نشان می‌دهند که پراکندگی خطا در شرایط حرکتی افزایش می‌یابد. به‌ویژه در سرعت‌های زاویه‌ای بالاتر، احتمال افزایش خطا بیشتر است، زیرا چرخش اسکوتر باعث تغییر سریع میدان دید، ناپایداری ناحیه تشخیص، تاری حرکتی و افزایش حساسیت نسبت به خطای هم‌زمانی میان داده‌های ادراکی و داده‌های حرکتی می‌شود. بنابراین، بخشی از افت دقت در اجرای واقعی به ماهیت دینامیکی سامانه و نه فقط به کیفیت الگوریتم استریو مربوط است.
+
+همچنین، خطای مربوط به موانع نسبت به نشانگر هدف بیشتر است. این تفاوت قابل انتظار است، زیرا نشانگر هدف دارای ظاهر مشخص‌تر و ناحیه تشخیص پایدارتر است، در حالی که موانع ممکن است بافت کمتر، مرز ضعیف‌تر، زاویه دید نامناسب‌تر یا تشخیص ناپایدارتر داشته باشند. در نتیجه، استخراج عمق برای مانع در شرایط واقعی دشوارتر از نشانگر هدف است.
+
+در شرایط حرکتی، روند کلی فاصله حفظ شده است، اما عدم‌قطعیت نسبت به آزمون ایستا بیشتر است. این نتیجه برای تفسیر ورودی‌های واقعی سیاست و نقش پایدارسازی و سپر ایمنی استفاده می‌شود.
+
+\subsection{ارزیابی خروجی جهت‌گیری حسگر اینرسی}
+\label{subsec:imu_yaw_evaluation}
+
+برای انتخاب سیگنال جهت‌گیری، حسگر در زاویه‌های مرجع $0^\circ$، $90^\circ$، $180^\circ$، $270^\circ$ و $360^\circ$ قرار گرفت و خروجی‌ها ثبت شدند.
+
+مطابق شکل~\ref{fig:imu_yaw_heading_test}، خروجی \lr{Euler yaw} تغییر زاویه را پیوسته‌تر و مستقیم‌تر دنبال کرد، درحالی‌که برخی نمایش‌های دیگر با تغییر علامت، ناپیوستگی زاویه‌ای یا نیاز به تبدیل کواترنیون همراه بودند.
+
+ازاین‌رو، \lr{Euler yaw} پس از صفرسازی اولیه و بازگشایی زاویه برای ترکیب با انکودرها و تخمین جهت حرکت انتخاب شد.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.95\linewidth]{desk_quat_test_yaw_comparison.png}
+	\caption{مقایسه خروجی‌های جهت‌گیری حسگر \lr{IMU} در آزمون چرخش‌های مرجع و انتخاب خروجی \lr{Euler yaw} برای تخمین جهت‌گیری اسکوتر}
+	\label{fig:imu_yaw_heading_test}
+\end{figure}
+
+\subsection{ارزیابی پاسخ حلقه‌بسته موتورهای محرک}
+\label{subsec:motor_rpm_response_test}
+
+برای بررسی توانایی سامانه حرکتی در اجرای فرمان‌های سرعت، پاسخ چهار موتور محرک در برابر فرمان‌های پله‌ای سرعت دورانی ارزیابی شد. در این آزمون، برای هر موتور به‌صورت جداگانه مجموعه‌ای از مقادیر مرجع شامل $5$، $10$، $15$، $20$ و $30~RPM$ اعمال شد و سرعت اندازه‌گیری‌شده موتور و خروجی \lr{PWM} متناظر ثبت گردید. در هر اجرا، تنها یک موتور فعال بود و خروجی سایر موتورها صفر نگه داشته شد تا پاسخ مستقل هر موتور بررسی شود.
+
+در سامانه عملی، سرعت هر موتور بر اساس پالس‌های حسگر هال اندازه‌گیری می‌شود و کنترل‌کننده سرعت از ترکیب مؤلفه پیش‌خور و کنترل‌کننده \lr{PI} استفاده می‌کند. علاوه بر این، برای کاهش اثر ناحیه مرده، اصطکاک سکون و تغییرات ناگهانی فرمان، جبران‌سازی ناحیه مرده، محدودیت نرخ تغییر فرمان و سازوکار ضد اشباع نیز در نظر گرفته شده است. ازاین‌رو، نتایج این بخش نباید به‌عنوان پاسخ خام موتور تفسیر شوند، بلکه پاسخ حلقه‌بسته مجموعه موتور، درایور، حسگر و کنترل‌کننده را نشان می‌دهند.
+
+\begin{figure}[p]
+	\centering
+	\includegraphics[width=0.98\textwidth]{motor_sweep_overlay_all.png}
+	\caption{مقایسه پاسخ حلقه‌بسته چهار موتور محرک در آزمون جاروب سرعت. در این شکل، پاسخ سرعت اندازه‌گیری‌شده، خروجی \lr{PWM}، پاسخ هر موتور در سطوح مختلف مرجع، و توزیع مقادیر \lr{PWM} برای چهار موتور به‌صورت تجمیعی نمایش داده شده است.}
+	\label{fig:motor_sweep_overlay}
+\end{figure}
+
+شکل~\ref{fig:motor_sweep_overlay} سرعت اندازه‌گیری‌شده، \lr{PWM}، پاسخ در سطوح مختلف مرجع و توزیع \lr{PWM} چهار موتور را برای مقایسه مستقیم نمایش می‌دهد.
+
+نتایج نشان می‌دهند که در فرمان‌های پایین، به‌ویژه در $5~RPM$، پاسخ موتورها ناپایدارتر و کمتر خطی است. این رفتار قابل انتظار است، زیرا در سرعت‌های پایین اثر اصطکاک سکون، ناحیه مرده درایور، لقی مکانیکی و کوانتیزه‌شدن اندازه‌گیری پالس‌ها بیشتر آشکار می‌شود. در این ناحیه، بخشی از فرمان \lr{PWM} صرف غلبه بر اصطکاک اولیه می‌شود و تا پیش از عبور از یک آستانه مشخص، حرکت پایدار ایجاد نمی‌گردد.
+
+در $10~RPM$، دنبال‌کردن مرجع بهتر می‌شود، اما هنوز اختلاف محسوسی میان موتورها وجود دارد. در سرعت‌های میانی، یعنی $15$ و $20~RPM$، تفاوت در رفتار چهار موتور واضح‌تر می‌شود. برخی موتورها با مقدار \lr{PWM} کمتر به سرعت مرجع نزدیک می‌شوند، در حالی که برخی دیگر برای رسیدن به همان سرعت به \lr{PWM} بیشتری نیاز دارند یا نوسان و بیش‌جهش بیشتری نشان می‌دهند. در این میان، یکی از موتورها نسبت به سایرین پاسخ کندتر و نیاز بیشتر به \lr{PWM} را نشان می‌دهد که بیانگر ناهمسانی عملگرها در سامانه واقعی است.
+
+در $30~RPM$ هر چهار موتور به‌طور کلی وارد ناحیه عملکرد باثبات‌تری می‌شوند و سرعت مرجع را بهتر دنبال می‌کنند. بااین‌حال، حتی در این سطح نیز اختلاف میان مقدار \lr{PWM} لازم برای حفظ سرعت و میزان نوسان خروجی میان موتورها باقی می‌ماند. این موضوع نشان می‌دهد که تقارن کامل میان چهار موتور وجود ندارد و پاسخ نهایی سامانه حرکتی از تفاوت‌های ذاتی عملگرها تأثیر می‌پذیرد.
+
+نمودارهای \lr{PWM} و هیستوگرام‌های متناظر نیز وجود ناحیه مرده و تفاوت میان راه‌اندازی و حرکت پایدار را به‌خوبی نشان می‌دهند. در بسیاری از موارد، برای شروع حرکت مقدار \lr{PWM} بیشتری لازم است، اما پس از راه‌افتادن موتور، مقدار \lr{PWM} موردنیاز برای حفظ سرعت کاهش می‌یابد. این رفتار با تفاوت میان اصطکاک سکون و اصطکاک حرکتی سازگار است. همچنین، در برخی سطوح مرجع، پس از رسیدن سرعت به مقدار مطلوب، کنترل‌کننده با کاهش تدریجی \lr{PWM} تلاش می‌کند اثر بیش‌جهش را محدود کند.
+
+سامانه محرک روند کلی فرمان سرعت را اجرا می‌کند، اما ناحیه مرده، تأخیر، بیش‌جهش و ناهمسانی موتورها باید در تفسیر آزمون‌های ناوبری واقعی در نظر گرفته شوند.
+
+\subsection{ارزیابی اجرای سیاست روی سامانه واقعی}
+\label{subsec:real_world_policy_validation}
+
+پس از آزمون اجزا، سیاست نهایی در 20 اپیزود مستقل روی اسکوتر اجرا شد تا قابلیت اولیه انتقال و عملکرد زنجیره کامل ادراک، تصمیم‌گیری و فرمان‌دهی بررسی شود. محدودیت تعداد آزمون‌ها ناشی از ملاحظات زمانی، ایمنی و اجرایی است.
+
+ورودی عامل از دوربین استریو، حسگر اینرسی و انکودرها تأمین و پاداش، طول اپیزود، دلیل پایان و \lr{TTC} ثبت شد. شکل~\ref{fig:real_world_validation_results} خلاصه این نتایج را نشان می‌دهد.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.92\linewidth]{real_world_validation_dashboard.png}
+	\caption{خلاصه نتایج اعتبارسنجی عملی سیاست روی اسکوتر واقعی شامل پاداش اپیزودها، طول اپیزودها، ترکیب دلایل پایان و توزیع زمان تا برخورد}
+	\label{fig:real_world_validation_results}
+\end{figure}
+
+خلاصه نتایج خروجی اپیزودها در جدول~\ref{tab:real_world_validation_summary} ارائه شده است. از مجموع 20 اپیزود، 16 اپیزود با موفقیت به هدف رسیده‌اند، 3 اپیزود به اتمام زمان منتهی شده‌اند و تنها 1 اپیزود با برخورد خاتمه یافته است. به این ترتیب، نرخ موفقیت برابر با 80\%، نرخ اتمام زمان برابر با 15\% و نرخ برخورد برابر با 5\% به دست آمده است.
+
+\begin{table}[htbp]
+	\centering
+	\caption{خلاصه نتایج اجرای سیاست روی اسکوتر واقعی}
+	\label{tab:real_world_validation_summary}
+	\renewcommand{\arraystretch}{1.3}
+	\begin{tabular}{|c|c|c|}
+		\hline
+		\textbf{نوع پایان اپیزود} & \textbf{تعداد} & \textbf{درصد} \\
+		\hline
+		رسیدن به هدف & 16 & 80\% \\
+		\hline
+		اتمام زمان & 3 & 15\% \\
+		\hline
+		برخورد & 1 & 5\% \\
+		\hline
+		مجموع & 20 & 100\% \\
+		\hline
+	\end{tabular}
+\end{table}
+
+مطابق شکل~\ref{fig:real_world_validation_results}، بیشتر اپیزودهای موفق دارای پاداش مثبت و نسبتاً بالا هستند و مقدار پاداش آن‌ها عمدتاً در بازه حدود 70 تا 115 قرار گرفته است. این موضوع نشان می‌دهد که سیاست در بخش عمده‌ای از اجراهای واقعی توانسته است مأموریت ناوبری را با عملکرد قابل قبول به پایان برساند. در مقابل، اپیزودهای ناموفق با پاداش‌های منفی مشخص شده‌اند. سه اپیزود منتهی به اتمام زمان دارای پاداش‌های منفی متوسط هستند، در حالی که تنها اپیزود برخورد، کمترین پاداش را تولید کرده است. میانگین کل پاداش نیز برابر با حدود 52.6 به دست آمده که با توجه به وجود چند اپیزود ناموفق، مقدار قابل قبولی برای اجرای واقعی محسوب می‌شود.
+
+نمودار طول اپیزودها نشان می‌دهد که سه اپیزود منتهی به اتمام زمان دقیقاً در سقف طول مجاز اپیزود قرار گرفته‌اند که نشان‌دهنده نرسیدن عامل به هدف در بازه زمانی تعریف‌شده است. در مقابل، بیشتر اپیزودهای موفق در طول‌هایی به‌مراتب کمتر از حد نهایی پایان یافته‌اند. طول اپیزودهای موفق تقریباً در بازه 50 تا 290 گام قرار دارد. این الگو نشان می‌دهد که شکست‌های مشاهده‌شده در آزمون عملی بیشتر از جنس ناتوانی در تکمیل مأموریت در زمان محدود بوده‌اند و نه بروز مکرر برخورد.
+
+نمودار دایره‌ای نیز سهم غالب موفقیت، سه اتمام زمان و یک برخورد را نمایش می‌دهد.
+
+توزیع \lr{TTC} نیز نکات مهمی را در مورد رفتار ایمنی سامانه نشان می‌دهد. همان‌طور که در شکل~\ref{fig:real_world_validation_results} مشاهده می‌شود، در بسیاری از اپیزودها حداقل \lr{TTC} در مقادیر کوچک متمرکز است، در حالی که میانگین \lr{TTC} در تعداد زیادی از اپیزودها در بازه‌های بزرگ‌تر، حدود 35 تا 50 ثانیه، قرار دارد. این الگو نشان می‌دهد که اگرچه سامانه در طول بخش بزرگی از هر اپیزود فاصله زمانی مناسبی تا برخورد حفظ کرده است، اما در برخی لحظات گذرا به وضعیت‌های نزدیک به خطر نیز وارد شده است. بنابراین، رسیدن به هدف در اجرای واقعی الزاماً به معنای حرکت با حاشیه ایمنی یکنواخت و بزرگ در تمام طول مسیر نیست.
+
+خروجی 20 اپیزود نشان می‌دهد زنجیره کامل در محیط واقعی قابل اجرا بوده است؛ سه اتمام زمان و یک برخورد نیز موارد ناموفق قابل تحلیل را مشخص می‌کنند.
+
+این مجموعه به‌عنوان اعتبارسنجی عملی اولیه گزارش می‌شود و تفسیر محدودیت‌های انتقال و نیازهای توسعه در فصل هفتم انجام می‌گیرد.
+
+\section{جمع‌بندی فصل}
+\label{sec:chapter6_summary}
+
+در این فصل، پروتکل ارزیابی تعریف و نتایج آموزش، آزمون نهایی شبیه‌سازی و اجرای عملی گزارش شد. در آزمون‌های 100 اپیزودی، نرخ موفقیت/برخورد برای دانشجو با سپر فعال $96/0\%$، دانشجو بدون مداخله فعال سپر $81/17\%$، معلم با داده ایده‌آل $98/1\%$، معلم با داده حسگری $94/5\%$، \lr{MPC} بدون سپر $30/70\%$ و \lr{MPC} با سپر $50/48\%$ بود.
+
+در سامانه عملی، فاصله‌سنجی ایستا با میانگین قدرمطلق خطای $0.0660~m$ و \lr{RMSE} برابر $0.0812~m$ ارزیابی شد؛ \lr{RMSE} زنجیره فاصله در حرکت برای هدف و مانع به‌ترتیب حدود $0.55$ و $0.65~m$ بود. \lr{Euler yaw} برای جهت‌گیری انتخاب شد، پاسخ چهار موتور در مراجع $5$ تا $30~RPM$ بررسی گردید و در اجرای واقعی 16 موفقیت، 3 اتمام زمان و 1 برخورد از 20 اپیزود ثبت شد. فصل هفتم این یافته‌ها را در قالب نتیجه‌گیری، دستاوردها و محدودیت‌ها تفسیر می‌کند.

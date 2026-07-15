@@ -15,12 +15,26 @@
 \usepackage[final]{listings}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \lstset{inputpath=./code/}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+
+
+% برای رسم بهتر الگوریتم ها
+%\usepackage{algorithmicx}
+%\usepackage{algpseudocode}
+
+
 % بسته‌ای برای رسم کادر
 \usepackage{framed} 
 % بسته‌‌ای برای چاپ شدن خودکار تعداد صفحات در صفحه «معرفی پایان‌نامه»
 \usepackage{lastpage}
 % بسته‌ٔ لازم برای: ۱. تغییر شماره‌گذاری صفحات پیوست. ۲. تصحیح باگ آدرس وب حاوی '%' در مراجع
 \usepackage{etoolbox}
+% بستهٔ سازگار با نسخه‌های جدید LaTeX برای بازنشانی شمارهٔ پاورقی در ابتدای هر صفحه
+\usepackage{zref-perpage}
+% برای حذف وابستگی شمارندهٔ پاورقی به فصل
+\usepackage{chngcntr}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% دستورات وابسته به استیل مراجع:
@@ -33,20 +47,31 @@
 \let\citelatin\cite
 \let\citeplatin\cite
 %%%%%%%%%%%%
-% بررسی حالت پیش نویس
+% بررسی حالت پیش‌نویس
 \usepackage{ifdraft}
+
+% گزینه‌های hyperref باید پیش از بارگذاری بسته تعیین شوند.
+% بسته hyperref فقط یک‌بار بارگذاری می‌شود تا خطای Option clash رخ ندهد.
+% گزینه hidelinks همهٔ لینک‌ها را فعال نگه می‌دارد، اما متن آن‌ها را مشکی
+% و کادر اطراف ارجاعات، پاورقی‌ها، لینک‌های وب و عبارات فهرست را حذف می‌کند.
 \ifdraft
 {%
-	% بسته‌ٔ ایجاد لینک‌های رنگی با امکان جهش
-	\usepackage[unicode=true,pagebackref=true,
-colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
+	\PassOptionsToPackage{unicode=true,pagebackref=true,hidelinks,final}{hyperref}%
+}
+{%
+	\PassOptionsToPackage{unicode=true,pagebackref=false,hidelinks}{hyperref}%
+}
+\usepackage{hyperref}
+\usepackage{qrcode}
+
+\ifdraft
+{%
 	%\usepackage{todonotes}
 	\usepackage[firstpage]{draftwatermark}
 	\SetWatermarkText{\ \ \ \rl{پیش‌نویس}}
 	\SetWatermarkScale{1.2}
 }
-{ 
-	\usepackage[pagebackref=false]{hyperref}
+{%
 	%\usepackage[disable]{todonotes} % final without TODOs
 }
 
@@ -69,6 +94,7 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 \makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 % بسته‌ لازم برای تنظیم سربرگ‌ها
 \usepackage{fancyhdr}
 %\usepackage{enumitem}
@@ -76,6 +102,7 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 % بسته‌های لازم برای نوشتن الگوریتم
 \usepackage{algorithm}
 \usepackage{algorithmic}
+
 % بسته‌های لازم برای رسم بهتر جداول
 \usepackage{tabulary}
 \usepackage{tabularx}
@@ -86,6 +113,11 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 \usepackage[subfigure]{tocloft}
 % بسته‌ای برای رسم نمودارها و نیز صفحه مالکیت اثر
 \usepackage{tikz}
+\usepackage{needspace}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
 % بسته‌ای برای ظاهر شدن «مراجع» و «نمایه» در فهرست مطالب
 \usepackage[nottoc]{tocbibind}
 % دستورات مربوط به ایجاد نمایه
@@ -101,9 +133,13 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 \usepackage{morewrites}
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % فراخوانی بسته زی‌پرشین (باید آخرین بسته باشد)
-\usepackage[extrafootnotefeatures, localize=on, displaymathdigits=persian]{xepersian}
+\usepackage[extrafootnotefeatures, displaymathdigits=persian]{xepersian}
 
-
+% در کلاس book، شمارندهٔ پاورقی به‌طور پیش‌فرض با شروع هر فصل صفر می‌شود.
+% ابتدا این وابستگی حذف می‌شود و سپس شمارهٔ پاورقی در ابتدای هر صفحه از ۱ آغاز می‌شود.
+\counterwithout{footnote}{chapter}
+\zmakeperpage{footnote}
+% برای تثبیت شماره‌ها پس از تغییر صفحه‌بندی، سند باید دست‌کم دو بار کامپایل شود.
 
 
 \makeatletter
@@ -169,6 +205,7 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % \SepMark{-}
+\DeclareRobustCommand{\serialcmd}{\lr{\texttt{SP\char35{}M0\char35{}M1\char35{}M2\char35{}M3}}}
 
 % تعریف و نحوه ظاهر شدن عنوان قضیه‌ها، تعریف‌ها، مثال‌ها و ...
 \theoremstyle{definition}
@@ -224,26 +261,64 @@ colorlinks,linkcolor=blue,citecolor=blue,final]{hyperref}
 \renewcommand{\algorithmiccomment}[1]{\{{\itshape #1}\}}
 \makeatletter
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% شماره‌گذاری صفحات پیوست‌ها
+%% صفحات متن اصلی بدون تغییر و به‌صورت پیوسته شماره‌گذاری می‌شوند.
+%% از آغاز پیوست‌ها، شمارهٔ نمایشی هر صفحه به صورت «آ.۱، آ.۲، ...»
+%% و برای پیوست بعدی به صورت «ب.۱، ب.۲، ...» خواهد بود.
+%% شمارندهٔ واقعی page بازنشانی نمی‌شود؛ بنابراین شمارش کل صفحات و
+%% مقصدهای پیوندهای PDF دچار تکرار یا اختلال نمی‌شوند.
+
+\newif\ifappendixpagenumbering
+\appendixpagenumberingfalse
+\newcounter{appendixstartpage}
+
+% شمارهٔ محلی صفحه در پیوست جاری:
+% صفحهٔ واقعی فعلی - صفحهٔ آغاز پیوست + ۱
+\newcommand{\appendixlocalpagenumber}{%
+	\number\numexpr\value{page}-\value{appendixstartpage}+1\relax
+}
+
+% در این بخش، حالت makeatletter از تنظیمات الگوریتم فعال است.
+% با اجرای \appendix، حالت شماره‌گذاری ویژهٔ پیوست فعال می‌شود.
+\pretocmd{\appendix}{\appendixpagenumberingtrue}{}{%
+	\PackageWarning{tehran-thesis}{Unable to patch \string\appendix}%
+}
+
+% این دستور فقط برای فصل‌های شماره‌دار اجرا می‌شود؛ بنابراین در آغاز هر
+% پیوست، مبدأ شمارهٔ محلی همان صفحه ثبت می‌شود.
+\pretocmd{\@makechapterhead}{%
+	\ifappendixpagenumbering
+		\setcounter{appendixstartpage}{\value{page}}%
+		\gdef\thepage{\thechapter.\appendixlocalpagenumber}%
+	\fi
+}{}{%
+	\PackageWarning{tehran-thesis}{Unable to patch \string\@makechapterhead}%
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% دستورهایی برای سفارشی کردن سربرگ صفحات:
 %\newcommand{\SetHeader}[1]{
 % دستور زیر معادل با گزینه twoside است.
 %\csname@twosidetrue\endcsname
 \pagestyle{fancy}
-%% دستورات زیر سبک صفحات fancy را تغییر می‌دهد:
+
 % O=Odd, E=Even, L=Left, R=Right
-% در صورت oneside بودن، عنوان فصل، سمت چپ ظاهر می‌شود.
+% صفحات زوج: عنوان فصل + عنوان پایان‌نامه
+% صفحات فرد: فقط عنوان پایان‌نامه
+
 \fancyhead{}
-\fancyhead[OL]{\small\leftmark}
-\fancyhead[ER]{\small\leftmark}
-\fancyhead[OR]{\footnotesize\rightmark}
-\fancyhead[EL]{\footnotesize\rightmark}
+
+% صفحه زوج: نام/عنوان فصل در سمت راست، عنوان پایان‌نامه در سمت چپ
+\fancyhead[ER]{\small\nouppercase{\leftmark}}
+
+% صفحه فرد: فقط عنوان پایان‌نامه
+\fancyhead[OR]{\footnotesize\@title}
+
 \renewcommand{\headrulewidth}{0.75pt}
+
 % شکل‌دهی شماره و عنوان فصل در سربرگ
 \renewcommand{\chaptermark}[1]{\markboth{\@chapapp~\thechapter:\ #1}{}}
-\makeatletter
-\renewcommand{\rightmark}[1]{\@title}
-\makeatother
 %}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\def\MATtextbaseline{1.5}

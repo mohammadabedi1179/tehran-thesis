@@ -1,0 +1,86 @@
+\chapter{نمودارهای تکمیلی آموزش عامل‌ها}
+\label{app:training_supplementary_figures}
+
+در این پیوست، تعدادی از نمودارهای تکمیلی مربوط به فرآیند آموزش عامل معلم و عامل دانشجو ارائه شده‌اند. این نمودارها برای پشتیبانی از تحلیل‌های فصل ششم آورده شده‌اند، اما به‌دلیل جلوگیری از طولانی‌شدن متن اصلی، در بخش پیوست قرار گرفته‌اند. نمودارهای این پیوست شامل تغییرات نرخ یادگیری و آنتروپی سیاست، آمار تکمیلی سپر ایمنی، خلاصه مرحله‌ای شاخص‌های آموزش و پوشش فضای عمل در مراحل مختلف آموزش هستند.
+
+\section{نرخ یادگیری و آنتروپی سیاست}
+\label{app:learning_rate_entropy}
+
+شکل~\ref{fig:app_teacher_student_lr_entropy} روند نرخ یادگیری و آنتروپی سیاست را در طول آموزش برای عامل معلم و عامل دانشجو نشان می‌دهد. این نمودارها برای بررسی روند کلی اکتشاف سیاست و تغییرات نرخ یادگیری در طول مراحل مختلف آموزش استفاده شده‌اند.
+
+\begin{figure}[htbp]
+	\centering
+	\subfloat[]{
+		\includegraphics[width=0.5\textwidth]{06_learning_rate_entropy_teacher.png}
+	}\hfill
+	\subfloat[]{
+		\includegraphics[width=0.5\textwidth]{06_learning_rate_entropy_student.png}
+	}
+	\caption{روند نرخ یادگیری و آنتروپی سیاست در طول آموزش: الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:app_teacher_student_lr_entropy}
+\end{figure}
+
+مطابق شکل~\ref{fig:app_teacher_student_lr_entropy}، نرخ یادگیری در هر دو عامل به‌صورت تدریجی کاهش یافته است. همچنین، آنتروپی سیاست پس از افت اولیه، در محدوده‌ای نسبتاً پایدار قرار گرفته است. این رفتار نشان می‌دهد که پس از فاز اکتشاف شدید در ابتدای آموزش، سیاست به‌تدریج به سمت رفتار ساختاریافته‌تر حرکت کرده است.
+
+\section{آمار تکمیلی سپر ایمنی}
+\label{app:shield_statistics}
+
+شکل~\ref{fig:app_shield_statistics} آمار تکمیلی مربوط به رخدادهای سپر ایمنی را نشان می‌دهد. این نمودار مکمل تحلیل ارائه‌شده در فصل ششم است و تعداد رخدادهای سپر و نسبت آن‌ها به طول اپیزود را در طول آموزش نمایش می‌دهد.
+
+
+\begin{figure}[htbp]
+	\centering
+	\subfloat[]{
+		\includegraphics[width=0.48\textwidth]{07_shield_stats_teacher.png}
+	}\hfill
+	\subfloat[]{
+		\includegraphics[width=0.48\textwidth]{07_shield_stats_student.png}
+	}
+	\caption{آمار تکمیلی رخدادهای سپر ایمنی در طول آموزش: الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:app_shield_statistics}
+\end{figure}
+
+همان‌گونه که در شکل~\ref{fig:app_shield_statistics} دیده می‌شود، رخدادهای سپر در طول آموزش به‌صورت یکنواخت توزیع نشده‌اند و در برخی مراحل افزایش مقطعی دارند.
+
+\section{خلاصه مرحله‌ای شاخص‌های آموزش}
+\label{app:stagewise_metric_summary}
+
+شکل~\ref{fig:app_stagewise_summary} توزیع چند شاخص اصلی را به تفکیک مراحل مختلف آموزش نشان می‌دهد. این شاخص‌ها شامل پاداش اپیزود، طول اپیزود، نسبت فعال‌سازی سپر ایمنی و حداقل فاصله ثبت‌شده از مانع هستند. این شکل به‌عنوان نسخه تکمیلی تحلیل مرحله‌ای فصل ششم ارائه شده است.
+
+\begin{figure}[p]
+	\centering
+	\subfloat[]{
+		\includegraphics[width=0.85\textwidth]{18_stagewise_distribution_summary_teacher.png}
+	}
+	
+\hfill
+	
+	\subfloat[]{
+		\includegraphics[width=0.85\textwidth]{18_stagewise_distribution_summary_student.png}
+	}
+	\caption{خلاصه مرحله‌ای شاخص‌های آموزش: الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:app_stagewise_summary}
+\end{figure}
+
+مطابق شکل~\ref{fig:app_stagewise_summary}، در بیشتر مراحل، توزیع پاداش در هر دو عامل در محدوده مقادیر بالا متمرکز است، اما عامل دانشجو در برخی مراحل دنباله‌های منفی و پراکندگی بیشتری نشان می‌دهد. همچنین، شاخص‌های مربوط به سپر و فاصله از موانع نشان می‌دهند که در مراحل دشوارتر، عامل دانشجو نسبت به عامل معلم رفتار متغیرتری داشته است.
+
+\section{پوشش فضای عمل در مراحل مختلف آموزش}
+\label{app:action_space_coverage}
+
+شکل~\ref{fig:app_action_space_coverage_teacher} و شکل \ref{fig:app_action_space_coverage_student}پوشش فضای عمل را در مراحل مختلف آموزش نشان می‌دهد. در این نمودار، محور افقی فرمان سرعت خطی و محور عمودی فرمان سرعت زاویه‌ای را نمایش می‌دهد. شدت رنگ نیز بیانگر تراکم انتخاب اعمال در هر ناحیه از فضای عمل است.
+
+\begin{figure}[p]
+		\centering
+		\includegraphics[width=0.85\textwidth]{46_action_distribution_per_stage_teacher.png}
+		\caption{پوشش فضای عمل در مراحل مختلف آموزش عامل معلم}
+		\label{fig:app_action_space_coverage_teacher}
+\end{figure}
+	
+\begin{figure}
+	\centering
+	\includegraphics[width=0.85\textwidth]{46_action_distribution_per_stage_student.png}
+	\caption{پوشش فضای عمل در مراحل مختلف آموزش: الف) عامل معلم، ب) عامل دانشجو}
+	\label{fig:app_action_space_coverage_student}
+\end{figure}
+
+بر اساس شکل~\ref{fig:app_action_space_coverage_teacher} و شکل \ref{fig:app_action_space_coverage_student}، بخش عمده اعمال انتخاب‌شده در ناحیه سرعت خطی مثبت متمرکز شده‌اند که نشان‌دهنده تمایل سیاست به حرکت پیش‌رونده به سمت هدف است. در عین حال، پراکندگی فرمان سرعت زاویه‌ای در مراحل مختلف نشان می‌دهد که عامل برای اصلاح مسیر و اجتناب از موانع از طیفی از فرمان‌های چرخشی استفاده کرده است. این نمودار نشان می‌دهد که سیاست نهایی تنها به یک عمل ثابت محدود نشده و در طول آموزش از بخش‌های مختلف فضای عمل بهره گرفته است.
