@@ -3,7 +3,7 @@
 
 \latinuniversity{University of Tehran}
 \latincollege{College of Engineering}
-\latinfaculty{School of Mechanical Engineering}
+\latinfaculty{Faculty of Mechanical Engineering}
 \latindepartment{Department of Applied Design}
 \latinsubject{Mechanical Engineering}
 \latinfield{Applied Design}
@@ -25,13 +25,12 @@
 % \en-abstract command used in older versions of tehran-thesis.cls.
 \makeatletter
 \gdef\@en-abstract{%
-Autonomous navigation of ground vehicles in dynamic environments requires the simultaneous integration of environmental perception, motion decision-making, obstacle avoidance, safety supervision, and accurate execution of control commands. This problem is particularly challenging for a four-wheel-drive scooter because of its relatively large mass and inertia, limited stopping capability, unequal motor responses, sensor uncertainty, and the presence of moving obstacles. This thesis develops and experimentally evaluates a learning-based framework for goal-directed navigation of a four-wheel-drive scooter among static and dynamic obstacles.
-
-The proposed policy is based on a recurrent Soft Actor--Critic architecture, referred to as LSTM--SAC, which generates continuous linear and angular velocity commands. A teacher--student training scheme is employed to reduce the gap between ideal simulation observations and sensor-based implementation. The teacher agent is trained using accurate geometric information, whereas the student agent learns from observations that more closely represent the actual sensing pipeline. Curriculum learning is used to increase environmental complexity progressively. In addition, a safety shield evaluates obstacle distance, relative motion, and estimated time to collision before the commands are applied.
-
-The complete practical system integrates a stereo camera, target and obstacle detection and tracking, depth estimation, an inertial measurement unit, wheel encoders, ultrasonic sensors, and closed-loop control of four drive motors. In the most challenging simulated scenario, the sensor-based student agent with the active safety shield achieved a success rate of 96\% with no collisions. In real-world evaluation over 20 independent episodes, the integrated system achieved an 80\% success rate and a 5\% collision rate.
-
-The results demonstrate that combining deep reinforcement learning, teacher--student training, multi-sensor perception, and an independent safety layer can enable practical goal-directed navigation of the scooter. Nevertheless, perception errors during motion, motor-control limitations, dependence on the safety shield, and the remaining simulation-to-reality gap continue to limit fully reliable autonomous operation.%
+	Autonomous navigation of vehicles in dynamic environments requires the simultaneous integration of environmental perception, motion decision-making, obstacle avoidance, safety assurance, and accurate command execution. This problem becomes more challenging for four-wheel-drive scooters because of their relatively large mass and inertia, limited stopping capability, nonuniform motor responses, sensor noise, and the presence of moving obstacles. This study aims to design, implement, and evaluate a learning-based framework for the autonomous goal-directed navigation of a four-wheel-drive scooter in environments containing both static and dynamic obstacles.
+	
+	In the proposed framework, a policy based on the \lr{LSTM-SAC} algorithm was developed to continuously generate linear and angular velocity commands. To improve the stability of the simulation-based training process, a teacher–student architecture was adopted, in which the teacher agent was trained using precise environmental information, whereas the student agent relied on sensor-based observations. The observation space included the relative position of the goal, the motion state of the scooter, ultrasonic sensor measurements, the previous control command, the risk level, and temporal features associated with multiple obstacles. The agents were also trained through a curriculum-learning strategy in which the complexity of the environment was progressively increased. In addition, a safety shield based on obstacle distance, relative motion, and estimated time to collision was incorporated into the command pipeline to reduce the probability of collisions.
+	
+	Simulation evaluations demonstrated that the student agent, using sensor-based observations and an active safety shield, was capable of successfully completing the navigation task with minimal collisions, even in complex scenarios. The experimental results also confirmed the feasibility of transferring the trained policy. Nevertheless, performance in the real environment exhibited a relative decline because of sensor noise, limitations in motor response, and discrepancies between the actual system dynamics and the simulation model. Overall, the integration of deep reinforcement learning, teacher–student training, multisensor perception, and a safety shield enabled the practical implementation of goal-directed scooter navigation. However, the agent’s dependence on safety interventions, perception errors during motion, and the simulation-to-reality gap remain among the most significant challenges to achieving fully autonomous, robust, and reliable performance.
+	%
 }
 \makeatother
 

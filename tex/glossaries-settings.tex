@@ -96,9 +96,7 @@
 %%% چاپ فهرست اختصارات
 \let\Oldprintglossary\printglossary
 \newcommand{\printabbreviation}{%
-  \clearpage
-  \addcontentsline{toc}{chapter}{فهرست اختصارات}
-  \glsaddall[types={acronym}]
+  {\renewcommand{\thepage}{\arabic{page}}\glsaddall[types={acronym}]}
   \begingroup
     \baselineskip=.75cm
     \setglossarystyle{myAbbrlist}
@@ -111,8 +109,8 @@
 %%% چاپ هر دو واژه‌نامه؛ همهٔ مدخل‌های words.tex چاپ می‌شوند، حتی اگر در متن با \gls فراخوانی نشده باشند.
 \renewcommand{\printglossary}{%
   \let\appendix\relax
-  \clearpage
-  \glsaddall[types={persian,english}]
+  %\clearpage
+  {\renewcommand{\thepage}{\arabic{page}}\glsaddall[types={persian,english}]}
   \twocolumn
   \setglossarystyle{myFaToEn}
   \Oldprintglossary[type=persian,title={واژه‌نامهٔ فارسی به انگلیسی},toctitle={واژه‌نامهٔ فارسی به انگلیسی}]

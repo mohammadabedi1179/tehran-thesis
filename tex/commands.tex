@@ -31,8 +31,6 @@
 \usepackage{lastpage}
 % بسته‌ٔ لازم برای: ۱. تغییر شماره‌گذاری صفحات پیوست. ۲. تصحیح باگ آدرس وب حاوی '%' در مراجع
 \usepackage{etoolbox}
-% بستهٔ سازگار با نسخه‌های جدید LaTeX برای بازنشانی شمارهٔ پاورقی در ابتدای هر صفحه
-\usepackage{zref-perpage}
 % برای حذف وابستگی شمارندهٔ پاورقی به فصل
 \usepackage{chngcntr}
 
@@ -135,11 +133,15 @@
 % فراخوانی بسته زی‌پرشین (باید آخرین بسته باشد)
 \usepackage[extrafootnotefeatures, displaymathdigits=persian]{xepersian}
 
-% در کلاس book، شمارندهٔ پاورقی به‌طور پیش‌فرض با شروع هر فصل صفر می‌شود.
-% ابتدا این وابستگی حذف می‌شود و سپس شمارهٔ پاورقی در ابتدای هر صفحه از ۱ آغاز می‌شود.
-\counterwithout{footnote}{chapter}
-\zmakeperpage{footnote}
-% برای تثبیت شماره‌ها پس از تغییر صفحه‌بندی، سند باید دست‌کم دو بار کامپایل شود.
+% شماره‌گذاری پاورقی‌ها در هر صفحه از ۱ آغاز می‌شود.
+% حذف وابستگی پاورقی به فصل در ابتدای سند انجام می‌شود تا هیچ بسته یا کلاسی
+% نتواند بعداً وابستگی فصل را دوباره برقرار کند.
+\AtBeginDocument{%
+    \counterwithout{footnote}{chapter}%
+}
+% پس از خروج هر صفحه، شمارنده صفر می‌شود؛ بنابراین نخستین پاورقی صفحهٔ بعد ۱ است.
+% این روش به فایل کمکی یا چند بار کامپایل برای تعیین شمارهٔ پاورقی وابسته نیست.
+\AddToHook{shipout/after}{\setcounter{footnote}{0}}
 
 
 \makeatletter
@@ -263,38 +265,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% شماره‌گذاری صفحات پیوست‌ها
-%% صفحات متن اصلی بدون تغییر و به‌صورت پیوسته شماره‌گذاری می‌شوند.
-%% از آغاز پیوست‌ها، شمارهٔ نمایشی هر صفحه به صورت «آ.۱، آ.۲، ...»
-%% و برای پیوست بعدی به صورت «ب.۱، ب.۲، ...» خواهد بود.
-%% شمارندهٔ واقعی page بازنشانی نمی‌شود؛ بنابراین شمارش کل صفحات و
-%% مقصدهای پیوندهای PDF دچار تکرار یا اختلال نمی‌شوند.
-
-\newif\ifappendixpagenumbering
-\appendixpagenumberingfalse
-\newcounter{appendixstartpage}
-
-% شمارهٔ محلی صفحه در پیوست جاری:
-% صفحهٔ واقعی فعلی - صفحهٔ آغاز پیوست + ۱
-\newcommand{\appendixlocalpagenumber}{%
-	\number\numexpr\value{page}-\value{appendixstartpage}+1\relax
-}
-
-% در این بخش، حالت makeatletter از تنظیمات الگوریتم فعال است.
-% با اجرای \appendix، حالت شماره‌گذاری ویژهٔ پیوست فعال می‌شود.
-\pretocmd{\appendix}{\appendixpagenumberingtrue}{}{%
-	\PackageWarning{tehran-thesis}{Unable to patch \string\appendix}%
-}
-
-% این دستور فقط برای فصل‌های شماره‌دار اجرا می‌شود؛ بنابراین در آغاز هر
-% پیوست، مبدأ شمارهٔ محلی همان صفحه ثبت می‌شود.
-\pretocmd{\@makechapterhead}{%
-	\ifappendixpagenumbering
-		\setcounter{appendixstartpage}{\value{page}}%
-		\gdef\thepage{\thechapter.\appendixlocalpagenumber}%
-	\fi
-}{}{%
-	\PackageWarning{tehran-thesis}{Unable to patch \string\@makechapterhead}%
-}
+%% هیچ بازنشانی یا قالب ویژه‌ای اعمال نمی‌شود؛ شمارهٔ صفحات پیوست ادامهٔ
+%% مستقیم شمارهٔ صفحات متن اصلی است.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% دستورهایی برای سفارشی کردن سربرگ صفحات:
